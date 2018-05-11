@@ -3,17 +3,21 @@
 # julia run_experiments.jl 2
 # which will be taken from all the datasets and all the algorithms will be run in these separate
 # folders
-push!(LOAD_PATH, ".")
+push!(LOAD_PATH, "/home/jan/dev/anomaly detection/anomaly_detection/experiments")
 using Experiments
+
+const PREPARE_DATASETS = true
 
 # download loda datasets
 #Experiments.downloadloda()
 
-# first export all the data
-(size(ARGS,1) >0)? repetition = parse(Int64, ARGS[1]) : repetition = 1
-println("Preparing experiment data....")
-Experiments.prepare_experiment_data(repetition)
-println("Done.\n")
+if PREPARE_DATASETS
+    # first export all the data
+    (size(ARGS,1) >0)? repetition = parse(Int64, ARGS[1]) : repetition = 1
+    println("Preparing experiment data....")
+    Experiments.prepare_experiment_data(repetition)
+    println("Done.\n")
+end
 
 # extract all created data folders
 fpaths = joinpath.(Experiments.export_path, readdir(Experiments.export_path))

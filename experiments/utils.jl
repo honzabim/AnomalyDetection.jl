@@ -29,7 +29,7 @@ function downloadloda()
 	fname = joinpath(loda_master_path, "Loda.zip")
 	if !isfile(fname)
 		println("Downloading Loda datasets...")
-		download("http://webdav.agents.fel.cvut.cz/data/projects/stegodata/Loda.zip", 
+		download("http://webdav.agents.fel.cvut.cz/data/projects/stegodata/Loda.zip",
 			fname)
 	end
 	println("Extracting the archive...")
@@ -44,7 +44,7 @@ end
 
 Prepare a single experiment.
 """
-function prepare_data(dataset_name, alpha, difficulty, frequency, variation, seed; 
+function prepare_data(dataset_name, alpha, difficulty, frequency, variation, seed;
 	repetition = 0, verb = false)
 	for i in 1:max(repetition,1)
 		# load basic dataset and call makeset to extract testing and training data
@@ -53,7 +53,7 @@ function prepare_data(dataset_name, alpha, difficulty, frequency, variation, see
 			seed = seed)
 
 		# now save it
-		fname = joinpath(export_path, string(lpad(size(trdata.data,1), 4, 0), "_", dataset_name, 
+		fname = joinpath(export_path, string(lpad(size(trdata.data,1), 4, 0), "_", dataset_name,
 			"_", alpha, "_", difficulty, "_", frequency, "_", variation))
 		# if more samples are requested, create subfolders
 		if repetition > 0
@@ -77,15 +77,15 @@ Set up data for the Loda experiment.
 function prepare_experiment_data(repetition)
 	# settings
 	# ratio of training to all data
-	alpha = 0.8 
+	alpha = 0.8
 	# easy/medium/hard/very_hard problem based on similarity of anomalous measurements to normal
-	difficulty = "easy" 
+	difficulty = "easy"
 	# ratio of anomalous to normal data
-	frequency = 0.05 
+	frequency = 0.05
 	# low/high - should anomalies be clustered or not
 	variation = "low"
-	# random seed 
-	seed = false 
+	# random seed
+	seed = false
 	# verbosity of the saving routine
 	verb = false
 
@@ -129,9 +129,10 @@ function run_experiment(dpaths, mode)
 			if !isdir(subpath)
 				continue
 			end
-			for f in [trainAE, trainVAE, trainsVAE, trainGAN, trainfmGAN, trainkNN]
-				f(subpath, mode)	
-			end
+			# for f in [trainAE, trainVAE, trainsVAE, trainGAN, trainfmGAN, trainkNN]
+			# 	f(subpath, mode)
+			# end
+			trainAutoencoderWithMemory(subpath, mode)
 		end
 	end
 end
@@ -143,8 +144,8 @@ Saves an algorithm output and input - params and anomaly scores.
 """
 function save_io(path, params, ascore, labels, loss, algo_name, nnparams)
 	mkpath(path)
-	save(joinpath(path,"io.jld"), "params", params, "anomaly_score", ascore, 
-		"labels", labels, "loss", loss, "algorithm", algo_name, "NN_params", nnparams)   
+	save(joinpath(path,"io.jld"), "params", params, "anomaly_score", ascore,
+		"labels", labels, "loss", loss, "algorithm", algo_name, "NN_params", nnparams)
 end
 
 ##########
@@ -191,7 +192,7 @@ function trainAE(path, mode)
 			"L" => batchsizes # batchsize
 			)
 	end
-	
+
 	# set params to be saved later
 	params = Dict(
 			# set problem dimensions
@@ -206,10 +207,10 @@ function trainAE(path, mode)
 		"contamination" => size(trY[trY.==1],1)/size(trY[trY.==0],1), # to set the decision threshold
 		"iterations" => 5000,
 		"cbit" => 1000, # when callback is printed
-		"verbfit" => verbfit, 
+		"verbfit" => verbfit,
 		"activation" => string(activation),
 		"rdelta" => 1e-5, # reconstruction error threshold when training is stopped
-		"Beta" => 1.0, # for automatic threshold computation, in [0, 1] 
+		"Beta" => 1.0, # for automatic threshold computation, in [0, 1]
 		# 1.0 = tight around normal samples
 		"tracked" => true # do you want to store training progress?
 		# it can be later retrieved from model.traindata
@@ -228,8 +229,8 @@ function trainAE(path, mode)
 		end
 		params["L"] = L
 		# setup the model
-		model = AEmodel(params["esize"], params["dsize"], params["L"], params["threshold"], 
-			params["contamination"], params["iterations"], params["cbit"], params["verbfit"], 
+		model = AEmodel(params["esize"], params["dsize"], params["L"], params["threshold"],
+			params["contamination"], params["iterations"], params["cbit"], params["verbfit"],
 			activation = activation, rdelta = params["rdelta"], tracked = params["tracked"],
 			Beta = params["Beta"])
 		# train the model
@@ -244,7 +245,7 @@ function trainAE(path, mode)
 	    end
 	end
 
-	# delete the last element of the 
+	# delete the last element of the
 	if poplast
 		pop!(AEparams["L"])
 	end
@@ -254,7 +255,7 @@ end
 
 ###########
 ### VAE ###
-###########	
+###########
 
 """
 	trainVAE(path, mode)
@@ -319,16 +320,16 @@ function trainVAE(path, mode)
 		"contamination" => size(trY[trY.==1],1)/size(trY[trY.==0],1), # to set the decision threshold
 		"iterations" => 10000,
 		"cbit" => 5000, # when callback is printed
-		"verbfit" => verbfit, 
+		"verbfit" => verbfit,
 		"M" => 1, # number of samples for reconstruction error, set higher for classification
 		"activation" => string(activation),
 		"rdelta" => 1e-5, # reconstruction error threshold when training is stopped
-		"Beta" => 1.0, # for automatic threshold computation, in [0, 1] 
+		"Beta" => 1.0, # for automatic threshold computation, in [0, 1]
 		# 1.0 = tight around normal samples
 		"tracked" => true # do you want to store training progress?
 		# it can be later retrieved from model.traindata
 		)
-	
+
 	for L in VAEparams["L"], lambda in VAEparams["lambda"]
 		if L > trN
 			continue
@@ -337,9 +338,9 @@ function trainVAE(path, mode)
 		params["lambda"] = lambda
 
 		# setup the model
-		model = VAEmodel(params["esize"], params["dsize"], params["lambda"],	params["threshold"], 
+		model = VAEmodel(params["esize"], params["dsize"], params["lambda"],	params["threshold"],
 			params["contamination"], params["iterations"], params["cbit"], params["verbfit"],
-			params["L"], M = params["M"], activation = activation, rdelta = params["rdelta"], 
+			params["L"], M = params["M"], activation = activation, rdelta = params["rdelta"],
 			Beta = params["Beta"], tracked = params["tracked"])
 		# train the model
 		AnomalyDetection.fit!(model, trX, trY)
@@ -355,7 +356,7 @@ function trainVAE(path, mode)
 	    end
 	end
 
-	# delete the last element of the 
+	# delete the last element of the
 	if poplast
 		pop!(VAEparams["L"])
 	end
@@ -365,7 +366,7 @@ end
 
 ############
 ### sVAE ###
-############	
+############
 
 """
 	trainsVAE(path, mode)
@@ -426,13 +427,13 @@ function trainsVAE(path, mode)
 		"contamination" => size(trY[trY.==1],1)/size(trY[trY.==0],1), # to set the decision threshold
 		"iterations" => 10000,
 		"cbit" => 5000, # when callback is printed
-		"verbfit" => verbfit, 
+		"verbfit" => verbfit,
 		"L" => 0, # batchsize, will be iterated over
 		"M" => 1, # number of samples for reconstruction error, set higher for classification
 		"activation" => string(activation),
 		"rdelta" => 1e-5, # reconstruction error threshold when training is stopped
 		"alpha" => 0.5, # data error term for classification
-		"Beta" => 1.0, # for automatic threshold computation, in [0, 1] 
+		"Beta" => 1.0, # for automatic threshold computation, in [0, 1]
 		# 1.0 = tight around normal samples
 		"tracked" => true, # do you want to store training progress?
 		# it can be later retrieved from model.traindata
@@ -445,7 +446,7 @@ function trainsVAE(path, mode)
 		push!(sVAEparams["L"], trN)
 		poplast = true
 	end
-	
+
 	for L in sVAEparams["L"], lambda in sVAEparams["lambda"]
 		if L > trN
 			continue
@@ -455,9 +456,9 @@ function trainsVAE(path, mode)
 
 		# setup the model
 		model = sVAEmodel(params["ensize"], params["decsize"], params["dissize"],
-		 params["lambda"],	params["threshold"], params["contamination"], 
-		 params["iterations"], params["cbit"], params["verbfit"], params["L"], 
-		 M = params["M"], activation = activation, rdelta = params["rdelta"], 
+		 params["lambda"],	params["threshold"], params["contamination"],
+		 params["iterations"], params["cbit"], params["verbfit"], params["L"],
+		 M = params["M"], activation = activation, rdelta = params["rdelta"],
 			tracked = params["tracked"], Beta = params["Beta"], xsigma = params["xsigma"])
 		# train the model
 		AnomalyDetection.fit!(model, trX, trY)
@@ -503,7 +504,7 @@ function trainGAN(path, mode)
 	tstX = tstdata.data;
 	tstY = tstdata.labels;
 	indim, trN = size(trX[:,trY.==0])
-	
+
 	# precompilation
 	if mode == "run"
 		settings = run_settings
@@ -545,11 +546,11 @@ function trainGAN(path, mode)
 		"L" => 0, # batchsize
 		"iterations" => 10000,
 		"cbit" => 5000, # when callback is printed
-		"verbfit" => verbfit, 
+		"verbfit" => verbfit,
 		"pz" => string(randn),
 		"activation" => string(activation),
 		"rdelta" => 1e-5, # reconstruction error threshold when training is stopped
-		"Beta" => 1.0, # for automatic threshold computation, in [0, 1] 
+		"Beta" => 1.0, # for automatic threshold computation, in [0, 1]
 		# 1.0 = tight around normal samples
 		"tracked" => true # do you want to store training progress?
 		# it can be later retrieved from model.traindata
@@ -568,9 +569,9 @@ function trainGAN(path, mode)
 		end
 
 		# setup the model
-		model = GANmodel(params["gsize"], params["dsize"], params["lambda"], params["threshold"], 
-			params["contamination"], L, params["iterations"], params["cbit"], 
-			params["verbfit"], pz = randn, activation = activation, rdelta = params["rdelta"], 
+		model = GANmodel(params["gsize"], params["dsize"], params["lambda"], params["threshold"],
+			params["contamination"], L, params["iterations"], params["cbit"],
+			params["verbfit"], pz = randn, activation = activation, rdelta = params["rdelta"],
 			tracked = params["tracked"], Beta = params["Beta"])
 		# train the model
 		AnomalyDetection.fit!(model, trX, trY)
@@ -615,7 +616,7 @@ function trainfmGAN(path, mode)
 	tstX = tstdata.data;
 	tstY = tstdata.labels;
 	indim, trN = size(trX[:,trY.==0])
-	
+
 	# precompilation
 	if mode == "run"
 		settings = run_settings
@@ -634,13 +635,13 @@ function trainfmGAN(path, mode)
 		fmGANparams = Dict(
 		"L" => batchsizes, # batchsize
 		"lambda" => linspace(0,1,5), # weight of reconstruction error in anomalyscore
-		"alpha" => push!([10.0^i for i in -2:2], 0.0) 
+		"alpha" => push!([10.0^i for i in -2:2], 0.0)
 		)
 	else
 		fmGANparams = Dict(
 		"L" => batchsizes, # batchsize
 		"lambda" => [0], # weight of reconstruction error in anomalyscore
-		"alpha" => [0.5] 
+		"alpha" => [0.5]
 		)
 	end
 
@@ -659,12 +660,12 @@ function trainfmGAN(path, mode)
 		"L" => 0, # batchsize
 		"iterations" => 10000,
 		"cbit" => 5000, # when callback is printed
-		"verbfit" => verbfit, 
+		"verbfit" => verbfit,
 		"pz" => string(randn),
 		"activation" => string(activation),
 		"rdelta" => 1e-5, # reconstruction error threshold when training is stopped
 		"alpha" => 0.5, # weight of discriminator score in generator loss training
-		"Beta" => 1.0, # for automatic threshold computation, in [0, 1] 
+		"Beta" => 1.0, # for automatic threshold computation, in [0, 1]
 		# 1.0 = tight around normal samples
 		"tracked" => true # do you want to store training progress?
 		# it can be later retrieved from model.traindata
@@ -681,11 +682,11 @@ function trainfmGAN(path, mode)
 		if L > trN
 			continue
 		end
-		
+
 		# setup the model
-		model = fmGANmodel(params["gsize"], params["dsize"], params["lambda"], params["threshold"], 
-			params["contamination"], L, params["iterations"], params["cbit"], 
-			params["verbfit"], pz = randn, activation = activation, rdelta = params["rdelta"], 
+		model = fmGANmodel(params["gsize"], params["dsize"], params["lambda"], params["threshold"],
+			params["contamination"], L, params["iterations"], params["cbit"],
+			params["verbfit"], pz = randn, activation = activation, rdelta = params["rdelta"],
 			tracked = params["tracked"], Beta = params["Beta"], alpha = alpha)
 		# train the model
 		AnomalyDetection.fit!(model, trX, trY)
@@ -729,7 +730,7 @@ function trainkNN(path, mode)
 	tstX = tstdata.data;
 	tstY = tstdata.labels;
 	indim, trN = size(trX)
-	
+
 	# set params to be saved later
 	params = Dict(
 		"k" => 1,
@@ -745,10 +746,10 @@ function trainkNN(path, mode)
 		kvec = [1]
 	end
 
-	@parallel for k in kvec 
+	@parallel for k in kvec
 		params["k"] = k
 		# setup the model
-		model = kNN(params["k"], metric = Euclidean(), weights = params["weights"], 
+		model = kNN(params["k"], metric = Euclidean(), weights = params["weights"],
 			threshold = params["threshold"], reduced_dim = params["reduced_dim"])
 
 		# train the model
