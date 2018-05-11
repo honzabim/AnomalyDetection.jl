@@ -8,7 +8,7 @@ push!(LOAD_PATH, codepath)
 using AnomalyDetection
 
 # this is where the LODA datasets are stored, change if necessary
-data_path = "../../../data/Loda/public/datasets/numerical/"
+data_path = "/home/jan/dev/data/loda/public/datasets/numerical/"
 
 function print_overview()
 	# data
@@ -32,8 +32,8 @@ function print_overview()
 	    i+=1
 	end
 	df = convert(DataFrame, arr)
-	rename!(df, f => t for (f, t) = 
-	    zip([:x1, :x2, :x3, :x4, :x5, :x6, :x7], 
+	rename!(df, f => t for (f, t) =
+	    zip([:x1, :x2, :x3, :x4, :x5, :x6, :x7],
 	        [:name, :M, :normal, :easy, :medium, :hard, :very_hard]))
 	showall(sort(df, cols = (:M)))
 	println("")

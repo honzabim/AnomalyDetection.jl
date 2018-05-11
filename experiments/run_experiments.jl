@@ -3,7 +3,7 @@
 # julia run_experiments.jl 2
 # which will be taken from all the datasets and all the algorithms will be run in these separate
 # folders
-push!(LOAD_PATH, "/home/jan/dev/anomaly detection/anomaly_detection/experiments")
+push!(LOAD_PATH, "/home/jan/dev/myAnomalyDetection.jl/AnomalyDetection.jl/experiments")
 using Experiments
 
 const PREPARE_DATASETS = true
