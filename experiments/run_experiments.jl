@@ -6,7 +6,7 @@
 push!(LOAD_PATH, "/home/jan/dev/myAnomalyDetection.jl/AnomalyDetection.jl/experiments")
 using Experiments
 
-const PREPARE_DATASETS = true
+const PREPARE_DATASETS = false
 
 # download loda datasets
 #Experiments.downloadloda()

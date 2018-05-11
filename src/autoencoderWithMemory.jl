@@ -7,7 +7,7 @@ using KNNmem
 const DEFAULT_LABEL = 0
 
 """
-	AE{encoder, sampler, decoder}
+	AutoencoderWithMemory{encoder, decoder, memory}
 
 Flux-like structure for the basic autoencoder.
 """
@@ -34,7 +34,7 @@ struct AutoencoderWithMemory
 		decoder = aelayerbuilder(dsize, activation, layer)
 
 		# finally construct the ae struct
-		return AutoencoderWithMemory(encoder, decoder, KNNmemory(memorySize, keySize, k, labelCount, α))
+		return new(encoder, decoder, KNNmemory(memorySize, keySize, k, labelCount, α))
 	end
 end
 
@@ -54,11 +54,6 @@ end
 ### training ###
 ################
 
-"""
-	evalloss(ae, X)
-
-Print ae loss function values.
-"""
 
 """
 	fit!(ae, X, L, [iterations, cbit, verb, rdelta, tracked])
@@ -76,7 +71,7 @@ history - MVHistory() to be filled with data of individual iterations
 function fit!(ae::AutoencoderWithMemory, X, L; iterations=1000, cbit = 200, verb = true, rdelta = Inf, history = nothing)
 
 	# optimizer
-	opt = ADAM(params(Chain(ae.encoder, ae.decoder))
+	opt = ADAM(params(Chain(ae.encoder, ae.decoder)))
 
 	# training
 	for i in 1:iterations
@@ -206,9 +201,9 @@ activation [Flux.relu] - activation function
 rdelta [Inf] - training stops if reconstruction error is smaller than rdelta
 Beta [1.0] - how tight around normal data is the automatically computed threshold
 tracked [false] - is training progress (losses) stored?
-"""Float
+"""
 function AutoencoderWithMemoryModel(esize::Array{Int64,1}, dsize::Array{Int64,1}, L::Int, threshold::Real, contamination::Real, iterations::Int,
-	cbit::Real, verbfit::Bool, memorySize::Integer, keySize::Integer, k::Integer, labelCount = 2, α = 0.1, γ = 0.5, rdelta = Inf, Beta = 1.0,
+	cbit::Real, verbfit::Bool, memorySize::Integer, keySize::Integer, k::Integer; labelCount = 2, α = 0.1, γ = 0.5, rdelta = Inf, Beta = 1.0,
 	tracked = false, activation = Flux.relu, layer = ResDense)
 
 	# construct the AE object

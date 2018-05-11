@@ -148,6 +148,114 @@ function save_io(path, params, ascore, labels, loss, algo_name, nnparams)
 		"labels", labels, "loss", loss, "algorithm", algo_name, "NN_params", nnparams)
 end
 
+###############################
+### Autoencoder with memory ###
+###############################
+
+### over this set of parameter values the AE will be trained for each dataset ###
+
+"""
+	trainAE(path, mode)
+
+Trains an autoencoder.
+"""
+function trainAutoencoderWithMemory(path, mode)
+	# load data
+	trdata = load(joinpath(path, "training_data.jld"))["dataset"]
+	tstdata = load(joinpath(path, "testing_data.jld"))["dataset"]
+	trX = trdata.data;
+	trY = trdata.labels;
+	tstX = tstdata.data;
+	tstY = tstdata.labels;
+	indim, trN = size(trX[:,trY.==0])
+
+	# precompilation
+	if mode == "run"
+		settings = run_settings
+	else
+		settings = comp_settings
+	end
+
+	hiddendim = settings["hiddendim"]
+	latentdim = settings["latentdim"]
+	batchsizes = settings["batchsizes"]
+	verbfit = settings["verbfit"]
+	activation = settings["activation"]
+
+	# over these parameters will be iterated
+	if mode == "run"
+		AEwMparams = Dict(
+			"L" => batchsizes # batchsize
+			)
+	else
+		AEwMparams = Dict(
+			"L" => batchsizes # batchsize
+			)
+	end
+
+	# set params to be saved later
+	params = Dict(
+			# set problem dimensions
+		"indim" => indim,
+		"hiddendim" => hiddendim,
+		"latentdim" => latentdim,
+		# model constructor parameters
+		"esize" => [indim; hiddendim; hiddendim; latentdim], # encoder architecture
+		"dsize" => [latentdim; hiddendim; hiddendim; indim], # decoder architecture
+		"L" => 0, # batchsize, will be iterated over
+		"threshold" => 0, # classification threshold, is recomputed when calling fit!
+		"contamination" => size(trY[trY.==1],1)/size(trY[trY.==0],1), # to set the decision threshold
+		"iterations" => 2000,
+		"cbit" => 200, # when callback is printed
+		"verbfit" => verbfit,
+		"activation" => string(activation),
+		"rdelta" => 1e-5, # reconstruction error threshold when training is stopped
+		"Beta" => 1.0, # for automatic threshold computation, in [0, 1]
+		# 1.0 = tight around normal samples
+		"tracked" => true, # do you want to store training progress?
+		# it can be later retrieved from model.traindata
+		"memorySize" => 256,
+		"keySize" => latentdim,
+		"k" => 32
+		)
+
+	# also, if batchsize is too large, add a batchsize param of the data size
+	poplast = false
+	if minimum(AEwMparams["L"]) > trN
+		push!(AEwMparams["L"], trN)
+		poplast = true
+	end
+
+	for L in AEwMparams["L"]
+		if L > size(trX,2)
+			continue
+		end
+		params["L"] = L
+		# setup the model
+		model = AutoencoderWithMemoryModel(params["esize"], params["dsize"], params["L"], params["threshold"],
+			params["contamination"], params["iterations"], params["cbit"], params["verbfit"], params["memorySize"],
+			params["keySize"], params["k"], activation = activation, rdelta = params["rdelta"], Beta = params["Beta"], tracked = params["tracked"])
+		# train the model
+		# AnomalyDetection.fit!(model, trX, trY)
+		AnomalyDetection.fit!(model, trX)
+		# get anomaly scores on testing data
+		ascore = [Flux.Tracker.data(AnomalyDetection.anomalyscore(model, tstX[:,i]))
+    		for i in 1:size(tstX,2)];
+    	if mode == "run"
+	    	# save anomaly scores, labels and settings
+	    	pname = joinpath(path, string("AutoencoderWithMemory_", L))
+	    	save_io(pname, params, ascore, tstY, model.traindata, "AutoencoderWithMemory_", Flux.params(Chain(model.ae.encoder, model.ae.decoder)))
+	    end
+	end
+
+	# delete the last element of the
+	if poplast
+		pop!(AEwMparams["L"])
+	end
+
+	println("AE training on $(path) finished!")
+end
+
 ##########
 ### AE ###
 ##########
